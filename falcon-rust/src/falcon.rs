@@ -375,7 +375,7 @@ impl<const N: usize> PublicKey<N> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Signature<const N: usize> {
     r: [u8; 40],
-    s: Vec<u8>,
+    s: Vec<u8>, //s2
 }
 
 impl<const N: usize> Signature<N> {
@@ -435,6 +435,43 @@ impl<const N: usize> Signature<N> {
             r: salt,
             s: signature_vector.to_vec(),
         })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExpandedSignature<const N: usize> {
+    r: [u8; 40],
+    s1: Polynomial<Felt>,
+    s2: Polynomial<Felt>,
+}
+
+impl<const N: usize> ExpandedSignature<N> {
+    /// from Signature to ExpandedSignature
+    /// s2 is decompressed
+    /// s1 is recovered
+    pub fn from_signature(m: &[u8], sig: &Signature<N>, pk: &PublicKey<N>) -> Self {
+        let n = N;
+
+        let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
+        let c = hash_to_point(&r_cat_m, n);
+
+        let s2 = Polynomial::new(
+            decompress(&sig.s, n)
+                .unwrap()
+                .iter()
+                .map(|a| Felt::new(*a))
+                .collect_vec(),
+        ); //todo: improve error handling
+
+        let s2_ntt = s2.fft();
+        let h_ntt = pk.h.fft();
+        let c_ntt = c.fft();
+
+        // s1 = c - s2 * pk.h;
+        let s1_ntt = c_ntt - s2_ntt.hadamard_mul(&h_ntt);
+        let s1 = s1_ntt.ifft();
+
+        ExpandedSignature { r: sig.r, s1, s2 }
     }
 }
 
@@ -554,9 +591,48 @@ pub fn verify<const N: usize>(m: &[u8], sig: &Signature<N>, pk: &PublicKey<N>) -
         .coefficients
         .iter()
         .map(|i| i.balanced_value() as i64)
-        .map(|i| (i * i))
+        .map(|i| i * i)
         .sum::<i64>()
-        + s2.iter().map(|&i| i as i64).map(|i| (i * i)).sum::<i64>();
+        + s2.iter().map(|&i| i as i64).map(|i| i * i).sum::<i64>();
+    length_squared < params.sig_bound
+}
+
+/// Fast verify a signature
+pub fn fverify<const N: usize>(
+    m: &[u8],
+    sig: &ExpandedSignature<N>,
+    pk: &PublicKey<N>,
+    indices: Vec<usize>,
+) -> bool {
+    let n = N;
+    let params = FalconVariant::from_n(N).parameters();
+    let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
+    let c = hash_to_point(&r_cat_m, n);
+
+    // s1 + s2 * pk.h = c
+    // only check for selected indices
+    for i in indices {
+        let should_be_ci = sig.s1.coefficients[i] + sig.s2.mul_coeff(&pk.h, i, n);
+        if should_be_ci != c.coefficients[i] {
+            return false;
+        }
+    }
+
+    let length_squared = sig
+        .s1
+        .coefficients
+        .iter()
+        .map(|i| i.balanced_value() as i64)
+        .map(|i| i * i)
+        .sum::<i64>()
+        + sig
+            .s2
+            .coefficients
+            .iter()
+            .map(|&i| i.balanced_value() as i64)
+            .map(|i| i * i)
+            .sum::<i64>();
+
     length_squared < params.sig_bound
 }
 
@@ -589,6 +665,10 @@ mod test {
         println!("-> verify ...");
         assert!(verify::<N>(&msg, &sig, &pk));
         println!("-> ok.");
+        let expanded_sig = super::ExpandedSignature::from_signature(&msg, &sig, &pk);
+        let indices: Vec<usize> = (0..N).step_by(10).collect();
+        assert!(super::fverify::<N>(&msg, &expanded_sig, &pk, indices));
+        println!("-> fverify ok.");
     }
 
     #[test]

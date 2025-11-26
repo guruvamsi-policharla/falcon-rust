@@ -211,6 +211,22 @@ impl<
         }
         Polynomial::new(coefficients)
     }
+
+    /// Multiply the polynomial by an input polynomial and return the idx-th coefficient
+    pub fn mul_coeff(&self, other: &Self, idx: usize, n: usize) -> F {
+        let mut result = F::zero();
+        for i in 0..n {
+            if i <= idx {
+                let j = idx - i;
+                result += self.coefficients[i].clone() * other.coefficients[j].clone();
+            } else {
+                let j = idx + n - i;
+                result += -(self.coefficients[i].clone() * other.coefficients[j].clone());
+            }
+        }
+
+        result
+    }
 }
 
 /// The following implementations are specific to cyclotomic polynomial rings,

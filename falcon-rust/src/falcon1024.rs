@@ -3,6 +3,7 @@ use crate::falcon;
 pub type SecretKey = falcon::SecretKey<1024>;
 pub type PublicKey = falcon::PublicKey<1024>;
 pub type Signature = falcon::Signature<1024>;
+pub type ExpandedSignature = falcon::ExpandedSignature<1024>;
 
 pub fn keygen(seed: [u8; 32]) -> (SecretKey, PublicKey) {
     falcon::keygen(seed)
@@ -14,4 +15,8 @@ pub fn sign(msg: &[u8], sk: &SecretKey) -> Signature {
 
 pub fn verify(msg: &[u8], sig: &Signature, pk: &PublicKey) -> bool {
     falcon::verify(msg, sig, pk)
+}
+
+pub fn fverify(msg: &[u8], sig: &ExpandedSignature, pk: &PublicKey, indices: Vec<usize>) -> bool {
+    falcon::fverify(msg, sig, pk, indices)
 }
