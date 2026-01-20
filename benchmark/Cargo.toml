@@ -5,8 +5,6 @@ edition = "2021"
 description = "Benchmarking suite for falcon-rust."
 license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 falcon-rust = { path = "../falcon-rust/" }
 itertools = "0.12.0"
@@ -29,3 +27,6 @@ harness = false
 name = "babai_reduce"
 harness = false
 
+[[bench]]
+name = "fast_verify"
+harness = false

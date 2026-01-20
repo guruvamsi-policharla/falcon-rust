@@ -17,6 +17,6 @@ pub fn verify(msg: &[u8], sig: &Signature, pk: &PublicKey) -> bool {
     falcon::verify(msg, sig, pk)
 }
 
-pub fn fverify(msg: &[u8], sig: &ExpandedSignature, pk: &PublicKey, indices: Vec<usize>) -> bool {
+pub fn fverify(msg: &[u8], sig: &ExpandedSignature, pk: &PublicKey, indices: &Vec<usize>) -> bool {
     falcon::fverify(msg, sig, pk, indices)
 }

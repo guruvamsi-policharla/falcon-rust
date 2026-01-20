@@ -602,7 +602,7 @@ pub fn fverify<const N: usize>(
     m: &[u8],
     sig: &ExpandedSignature<N>,
     pk: &PublicKey<N>,
-    indices: Vec<usize>,
+    indices: &Vec<usize>,
 ) -> bool {
     let n = N;
     let params = FalconVariant::from_n(N).parameters();
@@ -611,7 +611,7 @@ pub fn fverify<const N: usize>(
 
     // s1 + s2 * pk.h = c
     // only check for selected indices
-    for i in indices {
+    for &i in indices {
         let should_be_ci = sig.s1.coefficients[i] + sig.s2.mul_coeff(&pk.h, i, n);
         if should_be_ci != c.coefficients[i] {
             return false;
@@ -667,7 +667,7 @@ mod test {
         println!("-> ok.");
         let expanded_sig = super::ExpandedSignature::from_signature(&msg, &sig, &pk);
         let indices: Vec<usize> = (0..N).step_by(10).collect();
-        assert!(super::fverify::<N>(&msg, &expanded_sig, &pk, indices));
+        assert!(super::fverify::<N>(&msg, &expanded_sig, &pk, &indices));
         println!("-> fverify ok.");
     }
 
