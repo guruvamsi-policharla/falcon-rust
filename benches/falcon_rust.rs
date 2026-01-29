@@ -5,9 +5,9 @@ use std::{
     io::{Read, Write},
 };
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use itertools::Itertools;
-use pqcrypto_falcon::*;
+use pqcrypto_falcon::{falcon1024, falcon512};
 use rand::{thread_rng, Rng};
 
 const NUM_KEYS: usize = 2;
