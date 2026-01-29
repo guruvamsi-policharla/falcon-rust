@@ -30,3 +30,7 @@ harness = false
 [[bench]]
 name = "fast_verify"
 harness = false
+
+[[bench]]
+name = "fverify"
+harness = false

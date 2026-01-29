@@ -636,6 +636,58 @@ pub fn fverify<const N: usize>(
     length_squared < params.sig_bound
 }
 
+/// Fast verify a signature
+/// Then if it passes, do a full verify
+pub fn fverify_fullverify<const N: usize>(
+    m: &[u8],
+    sig: &ExpandedSignature<N>,
+    pk: &PublicKey<N>,
+    indices: &Vec<usize>,
+) -> bool {
+    let n = N;
+    let params = FalconVariant::from_n(N).parameters();
+    let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
+    let c = hash_to_point(&r_cat_m, n);
+
+    // s1 + s2 * pk.h = c
+    // only check for selected indices
+    for &i in indices {
+        let should_be_ci = sig.s1.coefficients[i] + sig.s2.mul_coeff(&pk.h, i, n);
+        if should_be_ci != c.coefficients[i] {
+            return false;
+        }
+    }
+
+    let length_squared = sig
+        .s1
+        .coefficients
+        .iter()
+        .map(|i| i.balanced_value() as i64)
+        .map(|i| i * i)
+        .sum::<i64>()
+        + sig
+            .s2
+            .coefficients
+            .iter()
+            .map(|&i| i.balanced_value() as i64)
+            .map(|i| i * i)
+            .sum::<i64>();
+
+    if length_squared >= params.sig_bound {
+        return false;
+    }
+
+    // s1 + s2 * pk.h = c
+    // do the full check
+    let s2_ntt = Polynomial::new(sig.s2.coefficients.clone()).fft();
+    let h_ntt = pk.h.fft();
+
+    // s1 = c - s2 * pk.h;
+    let should_be_s1 = c - s2_ntt.hadamard_mul(&h_ntt).ifft();
+
+    sig.s1 == should_be_s1
+}
+
 #[cfg(test)]
 mod test {
     use itertools::Itertools;
@@ -669,6 +721,13 @@ mod test {
         let indices: Vec<usize> = (0..N).step_by(10).collect();
         assert!(super::fverify::<N>(&msg, &expanded_sig, &pk, &indices));
         println!("-> fverify ok.");
+        assert!(super::fverify_fullverify::<N>(
+            &msg,
+            &expanded_sig,
+            &pk,
+            &indices
+        ));
+        println!("-> fverify_fullverify ok.");
     }
 
     #[test]
