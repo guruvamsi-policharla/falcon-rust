@@ -59,7 +59,7 @@ def main():
     variants = ["falcon512", "falcon1024"]
     index_counts = [1, 8]
     # Match the Rust formatting {:.2}
-    invalid_fractions = [0.00, 0.01, 0.1, 0.5, 0.9, 0.99]
+    invalid_fractions = [0.01, 0.1, 0.5, 0.9, 0.99]
     
     results = {v: {} for v in variants}
     

@@ -4,8 +4,8 @@ use rand::{thread_rng, Rng};
 
 fn benchmark_stream(c: &mut Criterion) {
     let num_signatures = 1000;
-    let index_counts = [1, 8];
-    let invalid_fractions = [1.0];
+    let index_counts = [1];
+    let invalid_fractions = [0.01];
 
     let mut group = c.benchmark_group("stream_verification");
     group.sample_size(10);
@@ -15,6 +15,7 @@ fn benchmark_stream(c: &mut Criterion) {
         for &invalid_fraction in &invalid_fractions {
             group.throughput(Throughput::Elements(num_signatures as u64));
 
+            /*
             // Falcon 512
             {
                 let num_invalid = (num_signatures as f64 * invalid_fraction) as usize;
@@ -46,7 +47,7 @@ fn benchmark_stream(c: &mut Criterion) {
                         })
                     },
                 );
-
+                /*
                 // Baseline full verify (only run once per fraction as it doesn't depend on indices)
                 if fverify_indices_count == index_counts[0] {
                     group.bench_function(
@@ -82,7 +83,9 @@ fn benchmark_stream(c: &mut Criterion) {
                         },
                     );
                 }
+                */
             }
+            */
 
             // Falcon 1024
             {
@@ -116,6 +119,7 @@ fn benchmark_stream(c: &mut Criterion) {
                     },
                 );
 
+                /*
                 // Baseline full verify (only run once per fraction as it doesn't depend on indices)
                 if fverify_indices_count == index_counts[0] {
                     group.bench_function(
@@ -151,6 +155,7 @@ fn benchmark_stream(c: &mut Criterion) {
                         },
                     );
                 }
+                */
             }
         }
     }
