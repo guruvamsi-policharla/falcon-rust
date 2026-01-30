@@ -48,3 +48,7 @@ harness = false
 name = "fast_verify"
 harness = false
 
+[[bench]]
+name = "fast_full_verify"
+harness = false
+
