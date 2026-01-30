@@ -651,15 +651,6 @@ pub fn fverify<const N: usize>(
     let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
     let c = hash_to_point(&r_cat_m, n);
 
-    // s1 + s2 * pk.h = c
-    // only check for selected indices
-    for &i in indices {
-        let should_be_ci = sig.s1.coefficients[i] + sig.s2.mul_coeff(&pk.h, i, n);
-        if should_be_ci != c.coefficients[i] {
-            return false;
-        }
-    }
-
     let length_squared = sig
         .s1
         .coefficients
@@ -675,7 +666,20 @@ pub fn fverify<const N: usize>(
             .map(|i| i * i)
             .sum::<i64>();
 
-    length_squared < params.sig_bound
+    if length_squared >= params.sig_bound {
+        return false;
+    }
+
+    // s1 + s2 * pk.h = c
+    // only check for selected indices
+    for &i in indices {
+        let should_be_ci = sig.s1.coefficients[i] + sig.s2.mul_coeff(&pk.h, i, n);
+        if should_be_ci != c.coefficients[i] {
+            return false;
+        }
+    }
+
+    true
 }
 
 /// Fast verify a signature
@@ -690,16 +694,6 @@ pub fn fverify_fullverify<const N: usize>(
     let params = FalconVariant::from_n(N).parameters();
     let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
     let c = hash_to_point(&r_cat_m, n);
-
-    // s1 + s2 * pk.h = c
-    // only check for selected indices
-    for &i in indices {
-        let should_be_ci = sig.s1.coefficients[i] + sig.s2.mul_coeff(&pk.h, i, n);
-        if should_be_ci != c.coefficients[i] {
-            println!("Failed to verify signature at index {}", i);
-            return false;
-        }
-    }
 
     let length_squared = sig
         .s1
@@ -718,6 +712,15 @@ pub fn fverify_fullverify<const N: usize>(
 
     if length_squared >= params.sig_bound {
         return false;
+    }
+
+    // s1 + s2 * pk.h = c
+    // only check for selected indices
+    for &i in indices {
+        let should_be_ci = sig.s1.coefficients[i] + sig.s2.mul_coeff(&pk.h, i, n);
+        if should_be_ci != c.coefficients[i] {
+            return false;
+        }
     }
 
     // s1 + s2 * pk.h = c

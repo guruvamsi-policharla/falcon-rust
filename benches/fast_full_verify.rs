@@ -6,7 +6,7 @@ use rand::{thread_rng, Rng};
 fn benchmark_stream(c: &mut Criterion) {
     let num_signatures = 1000;
     let index_counts = [1, 8];
-    let invalid_fractions = [0.99];
+    let invalid_fractions = [1.0];
 
     let mut group = c.benchmark_group("stream_verification");
     group.sample_size(10);
@@ -22,7 +22,7 @@ fn benchmark_stream(c: &mut Criterion) {
                 let num_valid = num_signatures - num_invalid;
 
                 let (sk, pk) = falcon512::keygen(rng.gen());
-                let (sk_invalid, _) = falcon512::keygen(rng.gen());
+                let (sk_invalid, _pk_invalid) = falcon512::keygen(rng.gen());
 
                 let valid_msgs: Vec<[u8; 32]> = (0..num_valid).map(|_| rng.gen()).collect();
                 let valid_sigs: Vec<_> = valid_msgs
