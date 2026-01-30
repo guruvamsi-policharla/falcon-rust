@@ -576,6 +576,7 @@ pub fn verify<const N: usize>(m: &[u8], sig: &Signature<N>, pk: &PublicKey<N>) -
     let s2 = match decompress(&sig.s, n) {
         Some(success) => success,
         None => {
+            println!("Failed to decompress signature");
             return false;
         }
     };
