@@ -67,4 +67,5 @@ pub(crate) mod inverse;
 pub mod math; // pub for benching
 pub mod polynomial; // pub for benching
 pub(crate) mod samplerz;
+pub mod test_utils;
 pub(crate) mod u32_field;

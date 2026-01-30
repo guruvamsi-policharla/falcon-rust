@@ -606,9 +606,8 @@ pub fn verify_expanded<const N: usize>(
 ) -> bool {
     let n = N;
     let params = FalconVariant::from_n(N).parameters();
-    let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
-    let c = hash_to_point(&r_cat_m, n);
 
+    // norm check
     let length_squared = sig
         .s1
         .coefficients
@@ -628,6 +627,8 @@ pub fn verify_expanded<const N: usize>(
         return false;
     }
 
+    let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
+    let c = hash_to_point(&r_cat_m, n);
     // s1 + s2 * pk.h = c
     // do the full check
     let s2_ntt = Polynomial::new(sig.s2.coefficients.clone()).fft();
@@ -648,9 +649,8 @@ pub fn fverify<const N: usize>(
 ) -> bool {
     let n = N;
     let params = FalconVariant::from_n(N).parameters();
-    let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
-    let c = hash_to_point(&r_cat_m, n);
 
+    // norm check
     let length_squared = sig
         .s1
         .coefficients
@@ -669,6 +669,9 @@ pub fn fverify<const N: usize>(
     if length_squared >= params.sig_bound {
         return false;
     }
+
+    let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
+    let c = hash_to_point(&r_cat_m, n);
 
     // s1 + s2 * pk.h = c
     // only check for selected indices
@@ -692,8 +695,6 @@ pub fn fverify_fullverify<const N: usize>(
 ) -> bool {
     let n = N;
     let params = FalconVariant::from_n(N).parameters();
-    let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
-    let c = hash_to_point(&r_cat_m, n);
 
     let length_squared = sig
         .s1
@@ -713,6 +714,9 @@ pub fn fverify_fullverify<const N: usize>(
     if length_squared >= params.sig_bound {
         return false;
     }
+
+    let r_cat_m = [sig.r.to_vec(), m.to_vec()].concat();
+    let c = hash_to_point(&r_cat_m, n);
 
     // s1 + s2 * pk.h = c
     // only check for selected indices
