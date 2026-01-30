@@ -59,7 +59,7 @@ def main():
     variants = ["falcon512", "falcon1024"]
     index_counts = [1, 8]
     # Match the Rust formatting {:.2}
-    invalid_fractions = [0.01, 0.1, 0.5, 0.9, 0.99]
+    invalid_fractions = [0.00, 0.01, 0.1, 0.5, 0.9, 0.99]
     
     results = {v: {} for v in variants}
     
@@ -78,6 +78,18 @@ def main():
             else:
                 print(f"Warning: Missing data for {subdir_name}", flush=True)
                 results[variant]["baseline"].append(None)
+                
+        # Load Baseline Expanded
+        results[variant]["baseline_expanded"] = []
+        for frac in invalid_fractions:
+            subdir_name = f"{variant}_baseline_expanded_invalid_{frac:.2f}"
+            path = base_dir / subdir_name
+            data = load_criterion_estimate(path)
+            if data:
+                results[variant]["baseline_expanded"].append(data["mean"] / 1_000_000)
+            else:
+                # Try 0.00 if 0.0 exists or vice versa if needed, but Criterion is strict
+                results[variant]["baseline_expanded"].append(None)
                 
         # Load Optimized (per index count)
         results[variant]["optimized"] = {idx: [] for idx in index_counts}
@@ -125,6 +137,18 @@ def main():
         ax.axhline(y=baseline_median, linestyle=base_style, color=base_color, 
                    linewidth=2.5, alpha=0.8, label=f'{variant_name} Baseline',
                    zorder=2)
+        
+        # Prepare baseline expanded data
+        baseline_exp_raw = [x if x is not None else np.nan for x in results[variant]["baseline_expanded"]]
+        if not np.all(np.isnan(baseline_exp_raw)):
+            baseline_exp_median = np.nanmedian(baseline_exp_raw)
+            baseline_medians.append(baseline_exp_median)
+            
+            # Plot Baseline Expanded as dotted line
+            base_exp_style = ':' if variant == 'falcon512' else (0, (1, 1)) # Dotted
+            ax.axhline(y=baseline_exp_median, linestyle=base_exp_style, color=base_color,
+                       linewidth=2.5, alpha=0.8, label=f'{variant_name} Baseline (Expanded)',
+                       zorder=2)
         
         # Plot Optimized lines
         current_colors = colors_512 if variant == 'falcon512' else colors_1024
