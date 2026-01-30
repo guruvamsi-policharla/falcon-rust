@@ -19,13 +19,14 @@ from pathlib import Path
 import sys
 
 # Configure matplotlib
+# Configure matplotlib for publication-quality figures
 plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams.update({
-    'font.size': 11,
-    'axes.labelsize': 12,
-    'axes.titlesize': 14,
-    'legend.fontsize': 10,
-    'figure.figsize': (14, 10),
+    'font.size': 12,
+    'axes.labelsize': 14,
+    'axes.titlesize': 16,
+    'legend.fontsize': 12,
+    'figure.figsize': (12, 8),
     'figure.dpi': 150,
 })
 
@@ -92,13 +93,15 @@ def main():
                     results[variant]["optimized"][idx].append(None)
 
     # Plotting
-    fig, ax = plt.subplots(figsize=(14, 10))
+    fig, ax = plt.subplots(figsize=(12, 8))
     
     # Colors for different variants and index counts
     # Falcon-512: Blues/Cyans
     # Falcon-1024: Reds/Oranges
     colors_512 = ['#0077B6', '#48CAE4'] # Strong Blue, Cyan
     colors_1024 = ['#9D0208', '#E85D04'] # Deep Red, Orange
+    
+    baseline_medians = []
     
     for i, variant in enumerate(variants):
         variant_name = "Falcon-512" if variant == "falcon512" else "Falcon-1024"
@@ -107,15 +110,21 @@ def main():
         baseline_raw = [x if x is not None else np.nan for x in results[variant]["baseline"]]
         # Calculate median for flat line
         baseline_median = np.nanmedian(baseline_raw)
+        baseline_medians.append(baseline_median)
         
         # Plot Baseline as flat line across the range
         # Use simple dashed lines for baselines
         base_color = 'navy' if variant == 'falcon512' else 'darkred'
         base_style = '--' if variant == 'falcon512' else '-.'
         
-        ax.plot([invalid_fractions[0], invalid_fractions[-1]], [baseline_median, baseline_median],
-                linestyle=base_style, color=base_color, linewidth=2, alpha=0.8,
-                label=f'{variant_name} Baseline (Median)')
+        # Plot Baseline as flat line across the entire width
+        # Use simple dashed lines for baselines
+        base_color = 'navy' if variant == 'falcon512' else 'darkred'
+        base_style = '--' if variant == 'falcon512' else '-.'
+        
+        ax.axhline(y=baseline_median, linestyle=base_style, color=base_color, 
+                   linewidth=2.5, alpha=0.8, label=f'{variant_name} Baseline',
+                   zorder=2)
         
         # Plot Optimized lines
         current_colors = colors_512 if variant == 'falcon512' else colors_1024
@@ -126,15 +135,34 @@ def main():
             
             c = current_colors[j % len(current_colors)]
             ax.plot(invalid_fractions, opt_times, 
-                    marker=marker_style, markersize=8, linewidth=2.5, color=c,
-                    label=f'{variant_name} Fast Verify ({idx} indices)')
+                    marker=marker_style, markersize=10, linewidth=3, color=c,
+                    label=f'{variant_name} Fast Verify ({idx} indices)',
+                    zorder=3)
     
-    ax.set_xlabel('Fraction of Invalid Signatures')
-    ax.set_ylabel('Total Time for 1000 Signatures (ms)')
-    ax.set_title('Falcon Stream Verification Benchmark: Processing Time', fontsize=16, fontweight='bold')
+    ax.set_xlabel('Fraction of Invalid Signatures', fontweight='bold')
+    ax.set_ylabel('Time Taken to verify 1000 Signatures (ms)', fontweight='bold')
+    
+    # Set x-limits to perfectly fit the 0-1 range without gaps
+    ax.set_xlim(0, 1)
     ax.set_xticks(invalid_fractions)
-    ax.set_xticklabels([f'{x:.2f}' for x in invalid_fractions], rotation=45)
-    ax.legend(fontsize=11, loc='best')
+    ax.set_xticklabels([f'{x:.2f}' for x in invalid_fractions], rotation=0)
+    
+    # Legend with border matching fverify plot style, positioned in the gap between baselines
+    ax.legend(fontsize=12, loc='center right', bbox_to_anchor=(0.99, 0.65), 
+              frameon=True, edgecolor='black', fancybox=False)
+    
+    # Add y-axis ticks at the baseline medians
+    yticks = list(ax.get_yticks())
+    for bm in baseline_medians:
+        yticks.append(bm)
+    
+    # Filter ticks and set
+    max_y = ax.get_ylim()[1]
+    yticks = [y for y in yticks if 0 <= y <= max_y]
+    yticks = sorted(set(yticks))
+    ax.set_yticks(yticks)
+    ax.set_yticklabels([f'{y:.1f}' for y in yticks])
+    
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
