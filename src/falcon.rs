@@ -768,6 +768,40 @@ mod test {
         assert!(verify::<N>(&msg, &sig, &pk));
         println!("-> ok.");
         let expanded_sig = super::ExpandedSignature::from_signature(&msg, &sig, &pk);
+
+        println!(
+            "Falcon-512 Signature Size (serialized): {} bytes",
+            sig.to_bytes().len()
+        );
+
+        let s1_coeffs: Vec<i16> = expanded_sig
+            .s1
+            .coefficients
+            .iter()
+            .map(|c| c.balanced_value())
+            .collect();
+        let s2_coeffs: Vec<i16> = expanded_sig
+            .s2
+            .coefficients
+            .iter()
+            .map(|c| c.balanced_value())
+            .collect();
+
+        let s1_compressed = crate::encoding::compress(&s1_coeffs, 4096).unwrap();
+        let s2_compressed = crate::encoding::compress(&s2_coeffs, 4096).unwrap();
+
+        let s1_len =
+            s1_compressed.len() - s1_compressed.iter().rev().take_while(|&&x| x == 0).count();
+        let s2_len =
+            s2_compressed.len() - s2_compressed.iter().rev().take_while(|&&x| x == 0).count();
+
+        println!(
+            "Falcon-512 Expanded Signature Size (compressed): {} bytes (s1: {}, s2: {}, salt: 40)",
+            s1_len + s2_len + 40,
+            s1_len,
+            s2_len
+        );
+
         let indices: Vec<usize> = (0..N).step_by(10).collect();
         assert!(super::fverify::<N>(&msg, &expanded_sig, &pk, &indices));
         println!("-> fverify ok.");
@@ -801,6 +835,41 @@ mod test {
         println!("-> verify ...");
         assert!(verify::<N>(&msg, &sig, &pk));
         println!("-> ok.");
+
+        let expanded_sig = super::ExpandedSignature::from_signature(&msg, &sig, &pk);
+        println!(
+            "Falcon-1024 Signature Size (serialized): {} bytes",
+            sig.to_bytes().len()
+        );
+
+        let s1_coeffs: Vec<i16> = expanded_sig
+            .s1
+            .coefficients
+            .iter()
+            .map(|c| c.balanced_value())
+            .collect();
+        let s2_coeffs: Vec<i16> = expanded_sig
+            .s2
+            .coefficients
+            .iter()
+            .map(|c| c.balanced_value())
+            .collect();
+
+        // Use a large buffer to ensure it fits (e.g., 2048*2 bytes since coeffs are small)
+        let s1_compressed = crate::encoding::compress(&s1_coeffs, 8192).unwrap();
+        let s2_compressed = crate::encoding::compress(&s2_coeffs, 8192).unwrap();
+
+        let s1_len =
+            s1_compressed.len() - s1_compressed.iter().rev().take_while(|&&x| x == 0).count();
+        let s2_len =
+            s2_compressed.len() - s2_compressed.iter().rev().take_while(|&&x| x == 0).count();
+
+        println!(
+            "Falcon-1024 Expanded Signature Size (compressed): {} bytes (s1: {}, s2: {}, salt: 40)",
+            s1_len + s2_len + 40,
+            s1_len,
+            s2_len
+        );
     }
 
     #[test]
