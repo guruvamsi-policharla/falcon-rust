@@ -175,10 +175,8 @@ def main():
     ax.legend(fontsize=12, loc='center right', bbox_to_anchor=(0.99, 0.65), 
               frameon=True, edgecolor='black', fancybox=False)
     
-    # Add y-axis ticks at the baseline medians
-    yticks = list(ax.get_yticks())
-    for bm in baseline_medians:
-        yticks.append(bm)
+    # Add y-axis ticks ONLY at the baseline medians to avoid overlapping
+    yticks = list(baseline_medians)
     
     # Filter ticks and set
     max_y = ax.get_ylim()[1]
