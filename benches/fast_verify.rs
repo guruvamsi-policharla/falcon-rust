@@ -70,6 +70,30 @@ pub fn falcon_rust_operation(c: &mut Criterion) {
             iterator_verify_1024 += 1;
         })
     });
+
+    let mut iterator_verify_expanded_512 = 0;
+    group.bench_function("verify 512 expanded", |b| {
+        b.iter(|| {
+            assert!(falcon_rust::falcon512::verify_expanded(
+                &msgs512[iterator_verify_expanded_512 % msgs512.len()],
+                &expanded_sigs512[iterator_verify_expanded_512 % expanded_sigs512.len()],
+                &keys512[iterator_verify_expanded_512 % NUM_KEYS].1,
+            ));
+            iterator_verify_expanded_512 += 1;
+        })
+    });
+
+    let mut iterator_verify_expanded_1024 = 0;
+    group.bench_function("verify 1024 expanded", |b| {
+        b.iter(|| {
+            assert!(falcon_rust::falcon1024::verify_expanded(
+                &msgs1024[iterator_verify_expanded_1024 % msgs1024.len()],
+                &expanded_sigs1024[iterator_verify_expanded_1024 % expanded_sigs1024.len()],
+                &keys1024[iterator_verify_expanded_1024 % NUM_KEYS].1,
+            ));
+            iterator_verify_expanded_1024 += 1;
+        })
+    });
     group.finish();
 
     let mut group = c.benchmark_group("falcon-rust");

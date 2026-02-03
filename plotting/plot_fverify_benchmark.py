@@ -93,6 +93,16 @@ def main():
     verify_1024_path = criterion_dir / "falcon-rust" / "verify 1024"
     verify_1024 = load_criterion_estimate(verify_1024_path)
     print(f"verify 1024: {verify_1024['mean']/1000:.2f} µs")
+
+    # Load baseline verify 512 expanded
+    verify_512_expanded_path = criterion_dir / "falcon-rust" / "verify 512 expanded"
+    verify_512_expanded = load_criterion_estimate(verify_512_expanded_path)
+    print(f"verify 512 expanded: {verify_512_expanded['mean']/1000:.2f} µs")
+
+    # Load baseline verify 1024 expanded
+    verify_1024_expanded_path = criterion_dir / "falcon-rust" / "verify 1024 expanded"
+    verify_1024_expanded = load_criterion_estimate(verify_1024_expanded_path)
+    print(f"verify 1024 expanded: {verify_1024_expanded['mean']/1000:.2f} µs")
     
     # Prepare Falcon-512 data for plotting
     indices_512 = np.array([d["indices"] for d in fverify_512_data])
@@ -104,6 +114,8 @@ def main():
     
     verify_512_mean = verify_512["mean"] / 1000
     verify_1024_mean = verify_1024["mean"] / 1000
+    verify_512_expanded_mean = verify_512_expanded["mean"] / 1000
+    verify_1024_expanded_mean = verify_1024_expanded["mean"] / 1000
     
     # Create the plot
     fig, ax = plt.subplots()
@@ -124,43 +136,81 @@ def main():
     ax.axhline(y=verify_512_mean, color='#E94F37', linestyle='--', linewidth=2,
                label=f'Verify Falcon-512: {verify_512_mean:.1f} µs', zorder=2)
     
+    # Plot verify 512 expanded baseline as horizontal line
+    ax.axhline(y=verify_512_expanded_mean, color='#E94F37', linestyle=':', linewidth=2,
+               label=f'Verify Expanded Falcon-512: {verify_512_expanded_mean:.1f} µs', zorder=2)
+
     # Plot verify 1024 baseline as horizontal line
     ax.axhline(y=verify_1024_mean, color='#06A77D', linestyle='--', linewidth=2,
                label=f'Verify Falcon-1024: {verify_1024_mean:.1f} µs', zorder=2)
+
+    # Plot verify 1024 expanded baseline as horizontal line
+    ax.axhline(y=verify_1024_expanded_mean, color='#06A77D', linestyle=':', linewidth=2,
+               label=f'Verify Expanded Falcon-1024: {verify_1024_expanded_mean:.1f} µs', zorder=2)
     
-    # Find and annotate breakeven point for Falcon-512 (linear interpolation)
+    # Find and annotate breakeven points for Falcon-512
+    # 1. Standard Verify
     for i in range(len(means_512) - 1):
         if means_512[i] < verify_512_mean <= means_512[i + 1]:
-            # Linear interpolation to find crossover
             x1, x2 = indices_512[i], indices_512[i + 1]
             y1, y2 = means_512[i], means_512[i + 1]
             breakeven_512 = x1 + (verify_512_mean - y1) * (x2 - x1) / (y2 - y1)
             
-            # Annotate breakeven point (positioned to the left to stay within plot)
-            ax.annotate(f'512 Breakeven ≈ {breakeven_512:.0f}',
+            ax.annotate(f'512 Verify ≈ {breakeven_512:.0f}',
                        xy=(breakeven_512, verify_512_mean),
-                       xytext=(breakeven_512 * 0.53, verify_512_mean * 1.2),
-                       fontsize=9, color='#E94F37',
+                       xytext=(breakeven_512 * 1.1, verify_512_mean * 0.75),
+                       fontsize=8, color='#E94F37',
                        arrowprops=dict(arrowstyle='->', color='#E94F37', lw=1.5),
-                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', 
+                       bbox=dict(boxstyle='round,pad=0.2', facecolor='white', 
+                                edgecolor='#E94F37', alpha=0.9))
+            break
+            
+    # 2. Expanded Verify
+    for i in range(len(means_512) - 1):
+        if means_512[i] < verify_512_expanded_mean <= means_512[i + 1]:
+            x1, x2 = indices_512[i], indices_512[i + 1]
+            y1, y2 = means_512[i], means_512[i + 1]
+            breakeven_512_exp = x1 + (verify_512_expanded_mean - y1) * (x2 - x1) / (y2 - y1)
+            
+            ax.annotate(f'512 Expanded Verify ≈ {breakeven_512_exp:.0f}',
+                       xy=(breakeven_512_exp, verify_512_expanded_mean),
+                       xytext=(breakeven_512_exp * 1.1, verify_512_expanded_mean * 0.65),
+                       fontsize=8, color='#E94F37',
+                       arrowprops=dict(arrowstyle='->', color='#E94F37', lw=1.5),
+                       bbox=dict(boxstyle='round,pad=0.2', facecolor='white', 
                                 edgecolor='#E94F37', alpha=0.9))
             break
     
-    # Find and annotate breakeven point for Falcon-1024 (linear interpolation)
+    # Find and annotate breakeven points for Falcon-1024
+    # 1. Standard Verify
     for i in range(len(means_1024) - 1):
         if means_1024[i] < verify_1024_mean <= means_1024[i + 1]:
-            # Linear interpolation to find crossover
             x1, x2 = indices_1024[i], indices_1024[i + 1]
             y1, y2 = means_1024[i], means_1024[i + 1]
             breakeven_1024 = x1 + (verify_1024_mean - y1) * (x2 - x1) / (y2 - y1)
             
-            # Annotate breakeven point
-            ax.annotate(f'1024 Breakeven ≈ {breakeven_1024:.0f}',
+            ax.annotate(f'1024 Verify ≈ {breakeven_1024:.0f}',
                        xy=(breakeven_1024, verify_1024_mean),
-                       xytext=(breakeven_1024 * 0.35, verify_1024_mean * 1.15),
-                       fontsize=9, color='#06A77D',
+                       xytext=(breakeven_1024 * 0.4, verify_1024_mean * 1.1),
+                       fontsize=8, color='#06A77D',
                        arrowprops=dict(arrowstyle='->', color='#06A77D', lw=1.5),
-                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', 
+                       bbox=dict(boxstyle='round,pad=0.2', facecolor='white', 
+                                edgecolor='#06A77D', alpha=0.9))
+            break
+            
+    # 2. Expanded Verify
+    for i in range(len(means_1024) - 1):
+        if means_1024[i] < verify_1024_expanded_mean <= means_1024[i + 1]:
+            x1, x2 = indices_1024[i], indices_1024[i + 1]
+            y1, y2 = means_1024[i], means_1024[i + 1]
+            breakeven_1024_exp = x1 + (verify_1024_expanded_mean - y1) * (x2 - x1) / (y2 - y1)
+            
+            ax.annotate(f'1024 Expanded Verify ≈ {breakeven_1024_exp:.0f}',
+                       xy=(breakeven_1024_exp, verify_1024_expanded_mean),
+                       xytext=(breakeven_1024_exp * 0.4, verify_1024_expanded_mean * 1.2),
+                       fontsize=8, color='#06A77D',
+                       arrowprops=dict(arrowstyle='->', color='#06A77D', lw=1.5),
+                       bbox=dict(boxstyle='round,pad=0.2', facecolor='white', 
                                 edgecolor='#06A77D', alpha=0.9))
             break
     
@@ -175,23 +225,12 @@ def main():
     ax.set_xticks(all_indices)
     ax.set_xticklabels(all_indices)
     
-    # Calculate y-axis limits: start from 0, end slightly above max data for tighter fit
-    max_y = max(means_512.max(), means_1024.max(), verify_512_mean, verify_1024_mean) * 1.1  # 10% padding above highest point
-    
-    # Add y-axis ticks at the verify baselines for easy reference
-    yticks = list(ax.get_yticks())
-    yticks.append(verify_512_mean)
-    yticks.append(verify_1024_mean)
-    # Filter ticks to only include those within our desired range
-    yticks = [y for y in yticks if 0 <= y <= max_y]
-    yticks = sorted(set(yticks))  # Remove duplicates and sort
-    ax.set_yticks(yticks)
-    
-    # Set y-axis limits AFTER setting ticks to prevent auto-expansion
+    # Calculate y-axis limits
+    max_y = max(means_512.max(), means_1024.max(), verify_512_mean, verify_1024_mean) * 1.1
     ax.set_ylim(bottom=0, top=max_y)
     
     # Legend with border in bottom right corner
-    ax.legend(loc='lower right', frameon=True, edgecolor='black', fancybox=False)
+    ax.legend(loc='upper left', frameon=True, edgecolor='black', fancybox=False)
     
     # Add grid
     ax.grid(True, alpha=0.3, linestyle='-')
